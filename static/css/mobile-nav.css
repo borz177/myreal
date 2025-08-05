@@ -1,0 +1,209 @@
+/* === Мобильная нижняя навигация и выезжающее меню === */
+
+/* Нижняя навигация */
+.bottom-nav {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    left: 16px;
+    right: 16px;
+    height: 72px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 24px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    z-index: 1030;
+    padding: 0 12px;
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 1;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.bottom-nav.hidden {
+    transform: translateY(120%);
+    opacity: 0;
+}
+
+.bottom-nav .nav-item {
+    flex-grow: 1;
+    text-align: center;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    position: relative;
+    padding: 8px 4px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.bottom-nav .nav-item i {
+    font-size: 22px;
+    display: block;
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+}
+
+.bottom-nav .nav-item.active {
+    color: #3b82f6;
+    transform: translateY(-4px);
+}
+
+.bottom-nav .nav-item.active i {
+    transform: scale(1.1);
+}
+
+.bottom-nav .nav-item .badge {
+    position: absolute;
+    top: 0;
+    right: 20%;
+    font-size: 11px;
+    padding: 3px 6px;
+    background-color: #ef4444;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+/* Выезжающее меню (drawer) */
+#mobileMenuDrawer.offcanvas-bottom {
+    height: 65%;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: none;
+}
+
+.offcanvas.offcanvas-bottom {
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+    will-change: transform, opacity;
+}
+
+/* Заголовок меню */
+.offcanvas-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.offcanvas-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.btn-close {
+    filter: opacity(0.6);
+}
+
+/* Пункты меню */
+.list-group-item {
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+/* Аккордеон */
+.collapse-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    color: #111827;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.collapse-toggle:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.collapse-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.collapse-toggle[aria-expanded="true"] i {
+    transform: rotate(180deg);
+}
+
+.collapse-content {
+    padding: 0 24px 8px;
+}
+
+.collapse-content a {
+    display: block;
+    padding: 12px 16px;
+    margin-left: 8px;
+    color: #4b5563;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.collapse-content a:hover {
+    background-color: rgba(59, 130, 246, 0.08);
+    color: #3b82f6;
+    transform: translateX(4px);
+}
+
+/* Обычные пункты меню */
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    color: #111827;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.menu-item .badge {
+    background-color: #ef4444;
+    font-weight: 500;
+}
+
+.menu-item.logout {
+    color: #ef4444;
+}
+
+.menu-item.logout:hover {
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+/* Анимации появления */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.list-group-item {
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+}
+
+.list-group-item:nth-child(1) { animation-delay: 0.05s; }
+.list-group-item:nth-child(2) { animation-delay: 0.1s; }
+.list-group-item:nth-child(3) { animation-delay: 0.15s; }
+.list-group-item:nth-child(4) { animation-delay: 0.2s; }
+.list-group-item:nth-child(5) { animation-delay: 0.25s; }
+.list-group-item:nth-child(6) { animation-delay: 0.3s; }
+
+/* Адаптивность: скрыть на ПК */
+@media (min-width: 768px) {
+    .bottom-nav, .offcanvas {
+        display: none !important;
+    }
+}

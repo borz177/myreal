@@ -1,0 +1,499 @@
+/* =================================================================== */
+/* === 1. ГЛОБАЛЬНЫЕ И ОБЩИЕ СТИЛИ                                   */
+/* =================================================================== */
+
+/* --- Аватары пользователей --- */
+/* Универсальный стиль для круглых аватаров (например, на странице добавления инвестора) */
+.avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Элементы списков с эффектом наведения --- */
+/* Применяется ко всем кликабельным элементам списка: при наведении — светлый фон */
+.list-group-item-action:hover,
+.investor-item:hover,
+#allClientsList .list-group-item:hover,
+#autocomplete-list .list-group-item:hover,
+#autocomplete-list .list-group-item:focus {
+    background-color: #f8f9fa;
+}
+
+/* --- Фокус на полях ввода (формы, селекты) --- */
+/* Визуальная подсветка активного поля — стандартный UX-паттерн */
+.form-control:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+/* --- Стили для бейджей (статусы, метки) --- */
+/* Базовый стиль для всех бейджей: размер, отступы, закругления */
+.badge,
+.status-badge,
+.value-badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+    border-radius: 50px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* --- Специфичные стили для статусов товаров --- */
+/* Цветовая индикация статуса: Оформлен, Завершен, Просрочен, Активен */
+.status-badge[data-status="Оформлен"] {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+.status-badge[data-status="Завершен"] {
+    background-color: #e2e3e5;
+    color: #41464b;
+}
+.status-badge[data-status="Просрочен"] {
+    background-color: #f8d7da;
+    color: #842029;
+}
+.status-badge[data-status="Активен"],
+.status-badge[data-status=""] {
+    background-color: #cfe2ff;
+    color: #084298;
+}
+
+
+/* =================================================================== */
+/* === 2. КОМПОНЕНТЫ (универсальные блоки)                            */
+/* =================================================================== */
+
+/* --- Карточки (общий стиль) --- */
+/* Базовый стиль для всех карточек: плавная анимация, тень, граница */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Эффект поднятия карточки при наведении */
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Заголовок карточки --- */
+/* Сделан кликабельным, с плавным изменением фона */
+.card-header {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.card-header:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* --- Поля ввода (инпуты, селекты) --- */
+/* Улучшенный внешний вид полей: скругление, граница, плавность */
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* --- Переключатель (switch) --- */
+/* Стиль для активного состояния чекбокса */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* --- Кнопки --- */
+/* Красная кнопка (удаление, ошибка) */
+.btn-danger {
+    background-color: #dc3545;
+    border: none;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background-color: #bb2d3b;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(220, 53, 69, 0.25);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+}
+
+/* Зелёная кнопка (успех, добавление) */
+.btn-success {
+    background-color: #198754;
+    border: none;
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-success:hover {
+    background-color: #157347;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(25, 135, 84, 0.25);
+}
+
+/* Кнопка WhatsApp (зелёная, с фирменным цветом) */
+.btn-whatsapp {
+    background-color: #25d366;
+    border-color: #25d366;
+    color: white;
+}
+
+.btn-whatsapp:hover {
+    background-color: #128c7e;
+    border-color: #128c7e;
+}
+
+/* --- Уменьшенные кнопки на десктопе --- */
+/* Для использования на ПК: меньше отступы, фиксированный размер */
+.desktop-sm-button {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
+}
+
+
+/* =================================================================== */
+/* === 3. СТРАНИЦЫ И КОНКРЕТНЫЕ БЛОКИ                               */
+/* =================================================================== */
+
+/* --- Управление счетами --- */
+/* Специфичные стили для карточек счетов */
+.card.account-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* --- Форма оформления товара (dashboard.html) --- */
+/* Обёртка формы */
+.form-card {
+    padding: 1.5rem;
+}
+
+/* Поле формы */
+.form-field {
+    margin-bottom: 1.25rem;
+}
+
+/* --- Список автозаполнения --- */
+/* Плавающий список под полем ввода */
+#autocomplete-list {
+    border-top: none;
+    background-color: #fff;
+    z-index: 1050;
+    position: absolute;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+#autocomplete-list .list-group-item {
+    cursor: pointer;
+    padding: 10px 15px;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+#autocomplete-list .list-group-item:hover,
+#autocomplete-list .list-group-item:focus {
+    background-color: #f0f8ff;
+    color: #0d6efd;
+}
+
+/* --- Опциональные поля (без ошибки валидации) --- */
+/* Убираем стандартную зелёную обводку для необязательных полей */
+.was-validated .optional-quiet:valid {
+    border-color: #ced4da;
+    background-image: none;
+    box-shadow: none;
+}
+
+/* --- Форма расходов (expence.html) --- */
+/* Карточка с градиентом и размытием фона */
+.card.expense-card {
+    border: none;
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+    backdrop-filter: blur(10px);
+}
+
+/* Поля ввода: более крупные скругления */
+.expense-card .form-select,
+.expense-card .form-control {
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* При фокусе — красная подсветка */
+.expense-card .form-select:focus,
+.expense-card .form-control:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.15);
+}
+
+/* Текст в группе полей (например, "₽") */
+.input-group-text {
+    border-radius: 12px 0 0 12px;
+    border-right: none;
+}
+
+/* --- Форма доходов (income.html) --- */
+/* Аналогично расходам, но с зелёной подсветкой */
+.card.income-card {
+    border: none;
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+    backdrop-filter: blur(10px);
+}
+
+.income-card .form-select:focus,
+.income-card .form-control:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
+}
+
+/* --- Страница платежей по товару (itempayments.html) --- */
+/* Карточка товара с анимацией */
+.client-product-card {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.client-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Блок с информацией о товаре */
+.product-section {
+    background-color: #f8f9fa;
+    border-left: 3px solid #0d91fd;
+    padding: 0.5rem 1rem;
+    margin: 0.5rem 0;
+}
+
+/* Элементы списка платежей */
+.list-group-item {
+    padding: 1rem 1.25rem;
+    border-left: none;
+    border-right: none;
+}
+
+/* Бейдж с суммой платежа */
+.value-badge {
+    background-color: #ffffff;
+    color: #101010;
+    min-width: 80px;
+}
+
+/* Кнопка удаления платежа — компактная */
+.delete-payment-btn {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Индикатор загрузки (скрыт по умолчанию) */
+#loadingIndicator {
+    text-align: center;
+    padding: 20px;
+    display: none;
+}
+
+#loadingIndicator img {
+    width: 50px;
+    opacity: 0.6;
+}
+
+/* --- Финансовые показатели (payments.html) --- */
+/* Общее оформление статистики */
+.finance-stats {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Название показателя (например, "Расходы") */
+.stat-label {
+    font-weight: 500;
+}
+
+/* Значение показателя (цифра или бейдж) */
+.stat-value {
+    font-weight: 600;
+    min-width: 120px;
+    text-align: right;
+    padding: 5px 12px;
+    border-radius: 18px;
+}
+
+/* --- Профиль пользователя --- */
+/* Блок с кнопками "Сохранить"/"Отменить" */
+/* Скрыт по умолчанию, появляется при изменении формы */
+#formButtons {
+    transition: all 0.3s ease;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+#formButtons.visible {
+    opacity: 1;
+    height: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+    margin-top: 1rem;
+}
+
+/* --- Проверка клиента (тёмная тема) --- */
+/* Основной фон страницы — тёмный */
+body.check-clients-page {
+    position: relative;
+    overflow-x: hidden;
+    background-color: #121212;
+    color: #e0e0e0; /* ✅ Исправлено: был #050101 — почти чёрный */
+}
+
+/* Частицы на фоне (через библиотеку particles.js) */
+#particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+/* Карточка клиента в тёмной теме */
+.client-card {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    color: #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+.client-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.client-card .card-header {
+    background-color: #252525;
+    border-bottom: 1px solid #333;
+    color: #ffffff;
+}
+
+.client-card .text-muted {
+    color: #9e9e9e !important;
+}
+
+.client-card .text-primary {
+    color: #4e9af1 !important;
+}
+
+.client-card .progress {
+    background-color: #333;
+    height: 8px;
+}
+
+.client-card .badge {
+    color: white !important;
+}
+
+/* Поисковая строка в тёмной теме */
+.search-box .input-group-text,
+.search-box .form-control {
+    border-color: #333;
+}
+
+.search-box .input-group-text {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+.search-box .form-control {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+/* Алерты (конфиденциальность и предупреждения) */
+.confidential-alert {
+    background-color: #332b00;
+    border-color: #665600;
+    color: #ffd700;
+}
+
+.confidential-note {
+    background-color: #252525;
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+
+/* =================================================================== */
+/* === 4. АНИМАЦИИ И АДАПТИВНОСТЬ                                   */
+/* =================================================================== */
+
+/* --- Анимация появления элементов --- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Адаптивность: мобильные устройства (до 576px) --- */
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1.25rem;
+    }
+    .form-label {
+        font-size: 0.95rem;
+    }
+    .stat-value {
+        min-width: 100px;
+        font-size: 0.85rem;
+        padding: 4px 10px;
+    }
+    .stat-label {
+        font-size: 0.9rem;
+    }
+    .card.client-card {
+        margin-bottom: 1rem;
+    }
+    #autocomplete-list .list-group-item {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+    }
+}
+
+/* --- Адаптивность: планшеты (до 768px) --- */
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .fs-4 {
+        font-size: 1.25rem;
+        margin-top: 0.5rem;
+    }
+}
+
+/* --- Адаптивность: десктопы (от 992px) --- */
+/* Уменьшаем кнопки на больших экранах */
+@media (min-width: 992px) {
+    .desktop-sm-button {
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+        border-radius: 8px;
+    }
+}

@@ -1,0 +1,38 @@
+
+/* Стили для страницы добавления платежа */
+#allClientsList .list-group-item {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #333;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+#allClientsList .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+#allClientsList .client-name {
+    font-weight: bold;
+}
+
+#allClientsList .bi-chevron-right {
+    font-size: 20px;
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Журнал транзакций{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-journal-text me-2"></i>Журнал транзакций
+      </h2>
+      <p class="text-muted mb-0">История всех операций</p>
+    </div>
+    <div class="d-flex">
+      <button class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-funnel"></i> Фильтры
+      </button>
+
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Дата</th>
+            <th>Тип</th>
+            <th>Счёт</th>
+            <th>Сумма</th>
+            <th class="pe-4">Описание</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transactions %}
+          <tr class="{% if t.type == 'income' %}income-row{% else %}expense-row{% endif %}">
+            <td class="ps-4">
+              <div class="fw-500">{{ t.created_at.strftime('%d.%m.%Y') }}</div>
+              <div class="text-muted small">{{ t.created_at.strftime('%H:%M') }}</div>
+            </td>
+            <td>
+              <span class="badge {% if t.type == 'income' %}bg-success bg-opacity-10 text-success{% else %}bg-danger bg-opacity-10 text-danger{% endif %} rounded-pill d-inline-flex align-items-center">
+                <i class="bi {% if t.type == 'income' %}bi-arrow-down-circle{% else %}bi-arrow-up-circle{% endif %} me-1"></i>
+                {{ 'Приход' if t.type == 'income' else 'Расход' }}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-light rounded-3 p-2 me-2">
+                  <i class="bi bi-wallet2 text-primary"></i>
+                </div>
+                <div>
+                  <div class="fw-500">{{ t.balance.name or 'Без названия' }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="{% if t.type == 'income' %}text-success{% else %}text-danger{% endif %} fw-bold">
+              {{ '%+.2f'|format(t.amount) }} ₽
+            </td>
+            <td class="pe-4">
+              <div class="text-truncate" style="max-width: 200px;" title="{{ t.description or '' }}">
+                {{ t.description or '-' }}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if not transactions %}
+  <div class="text-center py-5 my-5">
+    <div class="mb-4">
+      <i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i>
+    </div>
+    <h4 class="mb-2">Нет транзакций</h4>
+    <p class="text-muted">Здесь будут отображаться все ваши финансовые операции</p>
+
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  /* Стили для таблицы */
+  .card {
+    border: none;
+    background: linear-gradient(to bottom right, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+    backdrop-filter: blur(10px);
+  }
+
+  .table {
+    --bs-table-hover-bg: rgba(0, 0, 0, 0.02);
+    margin-bottom: 0;
+  }
+
+  .income-row:hover {
+    background-color: rgba(25, 135, 84, 0.03) !important;
+  }
+
+  .expense-row:hover {
+    background-color: rgba(220, 53, 69, 0.03) !important;
+  }
+
+  /* Стили для строк */
+  tr {
+    transition: all 0.2s ease;
+  }
+
+  /* Заголовок таблицы */
+  .table-light th {
+    background-color: rgba(248, 249, 250, 0.7);
+    backdrop-filter: blur(10px);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  /* Анимация строк */
+  tbody tr {
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Задержки для анимации строк */
+  tbody tr:nth-child(1) { animation-delay: 0.05s; }
+  tbody tr:nth-child(2) { animation-delay: 0.1s; }
+  tbody tr:nth-child(3) { animation-delay: 0.15s; }
+  tbody tr:nth-child(4) { animation-delay: 0.2s; }
+  tbody tr:nth-child(5) { animation-delay: 0.25s; }
+  tbody tr:nth-child(n+6) { animation-delay: 0.3s; }
+</style>
+{% endblock %}

@@ -1,0 +1,99 @@
+<!-- templates/mobile_nav.html -->
+<!-- Нижняя навигация -->
+<nav class="bottom-nav d-md-none">
+  <a href="/dashboard" class="nav-item {% if request.path == '/dashboard' %}active{% endif %}">
+    <i class="bi bi-house-door"></i>
+    <span>Главная</span>
+  </a>
+  <a href="/payments" class="nav-item {% if '/payments' in request.path %}active{% endif %}">
+    <i class="bi bi-cash-stack"></i>
+    <span>Касса</span>
+  </a>
+  <a href="/clients" class="nav-item {% if request.path.startswith('/clients') %}active{% endif %}">
+    <i class="bi bi-people"></i>
+    <span>Клиенты</span>
+  </a>
+  <a class="nav-item" data-bs-toggle="offcanvas" href="#mobileMenuDrawer" role="button">
+    <i class="bi bi-grid"></i>
+    <span>Ещё</span>
+  </a>
+</nav>
+
+<!-- Выезжающее меню -->
+<div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1" id="mobileMenuDrawer" aria-labelledby="mobileMenuLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="mobileMenuLabel">Меню</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <a href="/profile" class="menu-item">
+          <i class="bi bi-person-circle text-dark "></i>
+          <span style="margin-right: 190px;">Мой профиль</span>
+        </a>
+      </li>
+
+      <!-- Финансы -->
+      <li class="list-group-item">
+        <a class="collapse-toggle" data-bs-toggle="collapse" href="#mobileBalanceMenu" role="button" aria-expanded="false">
+          <span><i class="bi bi-wallet2 me-2"></i> Финансы</span>
+          <i class="bi bi-chevron-down"></i>
+        </a>
+        <div class="collapse" id="mobileBalanceMenu">
+          <div class="collapse-content">
+            <a href="/balance"><i class="bi bi-credit-card me-2"></i> Счета</a>
+            <a href="/income"><i class="bi bi-graph-up-arrow me-2"></i> Приход</a>
+            <a href="/expense"><i class="bi bi-graph-down-arrow me-2"></i> Расход</a>
+            <a href="/transactions"><i class="bi bi-journal-text me-2"></i> Журнал</a>
+          </div>
+        </div>
+      </li>
+
+      <li class="list-group-item">
+        <a href="/investors/add" class="menu-item">
+          <span><i class="bi bi-coin me-2"></i> Инвесторы</span>
+        </a>
+      </li>
+
+      <li class="list-group-item">
+        <a href="/contracts" class="menu-item">
+          <span><i class="bi bi-file-earmark-text me-2"></i> Договоры</span>
+        </a>
+      </li>
+
+      <li class="list-group-item">
+        <a href="/overdue" class="menu-item">
+          <span><i class="bi bi-exclamation-triangle me-2"></i> Просроченные</span>
+          {% if overdue_count and overdue_count > 0 %}
+            <span class="badge rounded-pill">{{ overdue_count }}</span>
+          {% endif %}
+        </a>
+      </li>
+
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <li class="list-group-item">
+        <a href="{{ url_for('admin_users') }}" class="menu-item">
+          <span><i class="bi bi-people me-2"></i> Пользователи</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <li class="list-group-item">
+        <a href="{{ url_for('check_clients') }}" class="menu-item">
+          <span><i class="bi bi-search me-2"></i> Проверка клиента</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if current_user.is_authenticated %}
+      <li class="list-group-item">
+        <a href="{{ url_for('logout') }}" class="menu-item logout">
+          <span><i class="bi bi-box-arrow-right me-2"></i> Выйти</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+</div>

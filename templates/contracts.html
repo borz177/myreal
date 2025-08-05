@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <!-- Заголовок с иконкой -->
+    <div class="d-flex align-items-center mb-4">
+        <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Договоры</h1>
+    </div>
+
+    <!-- Поисковая форма -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="{{ url_for('contracts') }}">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="q" value="{{ request.args.get('q', '') }}"
+                                   class="form-control" placeholder="Клиент или товар...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                            <input type="date" name="created_date" class="form-control"
+                                   value="{{ request.args.get('created_date', '') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-funnel"></i> Поиск
+                        </button>
+                        {% if request.args.get('q') or request.args.get('created_date') %}
+                        <a href="{{ url_for('contracts') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i> Сброс
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if items %}
+    <style>
+        .table-clickable tbody tr {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .table-clickable tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .status-badge {
+            font-size: 0.8em;
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            font-weight: 500;
+        }
+        .badge-active {
+            background-color: rgba(13, 110, 253, 0.1);
+            color: #0d6efd;
+            border: 1px solid rgba(13, 110, 253, 0.2);
+        }
+        .badge-completed {
+            background-color: rgba(25, 135, 84, 0.1);
+            color: #198754;
+            border: 1px solid rgba(25, 135, 84, 0.2);
+        }
+        .badge-drafted {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+            border: 1px solid rgba(108, 117, 125, 0.2);
+        }
+        .expandable-content {
+            display: none;
+            background-color: #f8fafc;
+            border-left: 3px solid #0d6efd;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .expanded-row {
+            background-color: #f8f9fa !important;
+        }
+        .action-buttons {
+            transition: all 0.2s ease;
+        }
+        .action-buttons .btn {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .photo-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .photo-btn:hover::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.05);
+        }
+    </style>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover table-clickable mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Клиент</th>
+                        <th>Товар</th>
+                        <th width="20">Статус</th>
+                        <th width="40"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr class="clickable-row align-middle">
+                        <td>{{ item.client_name }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>
+                            {% set paid = item.payments | sum(attribute='amount') %}
+                            {% if paid == 0 %}
+                            <span class="badge badge-drafted status-badge">Оформлен</span>
+                            {% elif paid < item.price %}
+                            <span class="badge badge-active status-badge">Активный</span>
+                            {% elif paid >= item.price %}
+                            <span class="badge badge-completed status-badge">Завершен</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <i class="bi bi-chevron-down text-muted"></i>
+                        </td>
+                    </tr>
+
+                    <!-- Разворачиваемый контент -->
+                    <tr class="expandable-content">
+                        <td colspan="4">
+                            <div class="p-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <h6 class="text-muted mb-2">Информация о договоре № {{ item.user_contract_number or "—" }}</h6>
+                                            <div class="d-flex flex-wrap gap-4 mt-2">
+
+                                                <div>
+                                                    <small class="text-muted d-block">Дата создания</small>
+                                                    <span class="fw-semibold">{{ item.created_at.strftime("%d.%m.%Y") if item.created_at else "—" }}</span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Сумма</small>
+                                                    <span class="fw-semibold">{{ "%.2f"|format(item.price) | rub}} </span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Оплачено</small>
+                                                    <span class="fw-semibold">{{ "%.2f"|format(paid) | rub}} </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {% if item.photo_url %}
+                                        <div class="mb-1">
+                                            <button class="btn btn-sm btn-outline-primary photo-btn mt-2"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#photoModal{{ item.id }}">
+                                                <i class="bi bi-image me-1"></i> Фото
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{{ url_for('edit_item', item_id=item.id) }}"
+                                           class="btn btn-sm btn-warning me-2 mt-2"
+                                           title="Редактировать">
+                                            <i class="bi bi-pencil"></i> Редактировать
+                                        </a>
+
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger delete-item-btn ms-auto"
+                                                data-item-id="{{ item.id }}"
+                                                data-client-name="{{ item.client_name }}"
+                                                data-item-name="{{ item.name }}"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteModal{{ item.id }}"
+                                                title="Удалить">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра фото -->
+    {% for item in items if item.photo_url %}
+    <div class="modal fade" id="photoModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Фото</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img src="{{ url_for('static', filename='uploads/' ~ item.photo_url) }}"
+                         alt="Фото"
+                         class="img-fluid rounded-bottom">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Закрыть
+                    </button>
+                    <a href="{{ url_for('static', filename='uploads/' ~ item.photo_url) }}"
+                       class="btn btn-primary"
+                       download>
+                        <i class="bi bi-download"></i> Скачать
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Модальные окна для удаления -->
+    {% for item in items %}
+    <div class="modal fade" id="deleteModal{{ item.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ item.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('delete_item', item_id=item.id) }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalLabel{{ item.id }}">
+                            <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                            Удаление договора
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Вы уверены, что хотите удалить договор с клиентом <strong>{{ item.client_name }}</strong>?</p>
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            Это действие невозможно отменить. Все связанные данные будут удалены.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg"></i> Отмена
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Удалить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-folder-x text-muted" style="font-size: 3rem;"></i>
+            <h5 class="mt-3 text-muted">Договоры не найдены</h5>
+            <p class="text-muted">Попробуйте изменить параметры поиска или создать новый договор</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
+                <i class="bi bi-plus-lg"></i> Добавить договор
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Поиск по таблице
+    const searchInput = document.querySelector('input[name="q"]');
+    const rows = document.querySelectorAll('.clickable-row');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            rows.forEach(row => {
+                const clientName = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const itemName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                row.style.display = clientName.includes(query) || itemName.includes(query) ? '' : 'none';
+            });
+        });
+    }
+
+    // Раскрытие/скрытие строк
+    rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Игнорируем клики по кнопкам внутри строки
+            if (e.target.closest('a, button')) return;
+
+            const expandableRow = this.nextElementSibling;
+            if (expandableRow && expandableRow.classList.contains('expandable-content')) {
+                const isExpanded = expandableRow.style.display === 'table-row';
+                // Toggle the display of the clicked row and its expandable content
+                expandableRow.style.display = isExpanded ? 'none' : 'table-row';
+                this.classList.toggle('expanded-row', !isExpanded);
+
+                // Анимация иконки
+                const icon = this.querySelector('td:last-child i');
+                if (icon) {
+                    icon.classList.toggle('bi-chevron-down', isExpanded);
+                    icon.classList.toggle('bi-chevron-up', !isExpanded);
+                }
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Контейнер для частиц -->
+<div id="particles-js"></div>
+
+<div class="container mt-2">
+    <!-- Заголовок -->
+    <div class="d-flex align-items-center mb-4">
+        <i class="fas fa-user-shield fa-2x text-primary me-3"></i>
+        <h2 class="mb-0">Проверка клиента</h2>
+    </div>
+
+    <!-- Предупреждение о конфиденциальности -->
+    <div class="confidential-alert alert alert-warning mb-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-lock fa-lg me-3"></i>
+            <div>
+                <strong>Конфиденциальная информация!</strong>
+                <p class="mb-0">Все данные клиентов защищены. Запрещено разглашать информацию третьим лицам.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Поисковая форма -->
+    <form method="get" action="{{ url_for('check_clients') }}">
+        <div class="search-box input-group mb-4 shadow-sm">
+            <span class="input-group-text bg-dark border-secondary">
+                <i class="fas fa-search text-light"></i>
+            </span>
+            <input type="text" name="q" class="form-control border-secondary bg-dark text-light"
+                   value="{{ search_query }}" placeholder="Введите полное имя клиента..." required>
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="fas fa-search me-2"></i>Найти
+            </button>
+        </div>
+    </form>
+
+    {% if request.args.get('q') %}
+        {% if contracts %}
+        <div class="row g-3">
+            {% for contract in contracts %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card client-card h-100">
+                    <div class="card-header bg-dark">
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="fas fa-user-circle me-2"></i>{{ contract.client_name }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="client-info">
+                            <!-- Адрес -->
+                            {% if contract.client_address %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Адрес:</span>
+                                <span class="text-light">{{ contract.client_address }}</span>
+                            </div>
+                            {% endif %}
+
+                            <!-- Срок рассрочки -->
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Срок:</span>
+                                <strong class="text-light">{{ contract.installments }} мес.</strong>
+                            </div>
+
+                            <!-- Дата оформления -->
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Оформлен:</span>
+                                <strong class="text-light">{{ contract.created_at.strftime('%d.%m.%Y') }}</strong>
+                            </div>
+
+                            <!-- Сумма -->
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Сумма:</span>
+                                <strong class="text-primary">{{ contract.price | rub }}</strong>
+                            </div>
+
+                            <!-- Оплачено -->
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Оплачено:</span>
+                                <strong class="text-light">{{ contract.payments | sum(attribute='amount') | rub }}</strong>
+                            </div>
+
+                            <!-- Прогресс бар -->
+                            {% set paid_percent = (contract.payments | sum(attribute='amount') / contract.price) * 100 %}
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     style="width: {{ paid_percent }}%"
+                                     aria-valuenow="{{ paid_percent }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+
+                            <!-- Статус -->
+                            <div class="status-info">
+                                {% set paid = contract.payments | sum(attribute='amount') %}
+                                {% set has_overdue = 'overdue_months' in contract.__dict__ and contract.overdue_months > 0 %}
+                                {% if has_overdue %}
+                                    <span class="badge bg-danger rounded-pill">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        Просрочка: {{ contract.overdue_months }} мес.
+                                    </span>
+                                {% else %}
+                                    {% if paid == 0 %}
+                                        <span class="badge bg-secondary rounded-pill">
+                                            <i class="fas fa-file-signature me-1"></i> Оформлен
+                                        </span>
+                                    {% elif paid < contract.price %}
+                                        <span class="badge bg-warning rounded-pill text-dark">
+                                            <i class="fas fa-clock me-1"></i> Активный
+                                        </span>
+                                    {% elif paid >= contract.price %}
+                                        <span class="badge bg-success rounded-pill">
+                                            <i class="fas fa-check-circle me-1"></i> Завершен
+                                        </span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка WhatsApp -->
+                    <div class="mt-3 text-center pb-3">
+                        <span class="text-muted">Оформил:</span>
+                        {% if contract.phone %}
+                            <a href="#"
+                               class="btn btn-whatsapp btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+                               onclick="openWhatsApp('{{ contract.phone }}'); return false;">
+                                <i class="fab fa-whatsapp"></i>
+                                Написать в WhatsApp
+                            </a>
+                        {% else %}
+                            <small class="text-muted">Нет номера</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center py-4">
+            <i class="fas fa-user-slash fa-3x mb-3 text-muted"></i>
+            <h4 class="alert-heading">Клиент не найден</h4>
+            <p>Клиент с именем "{{ search_query }}" не найден.</p>
+            <hr>
+            <p class="mb-0">Проверьте правильность ввода.</p>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="welcome-message text-center py-5">
+            <div class="icon-container mb-4">
+                <i class="fas fa-search fa-4x text-primary"></i>
+            </div>
+            <h4 class="mb-3">Начните поиск клиента</h4>
+            <div class="confidential-note alert alert-light mx-auto" style="max-width: 600px;">
+                <i class="fas fa-shield-alt me-2 text-primary"></i>
+                <strong>Важно:</strong> Все данные — конфиденциальные.
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

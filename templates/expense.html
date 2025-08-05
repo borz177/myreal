@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Добавить расход{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4 p-md-5">
+      <!-- Заголовок с иконкой -->
+      <div class="d-flex align-items-center mb-4">
+        <div class="bg-danger bg-opacity-10 p-3 rounded-3 me-3">
+          <i class="bi bi-arrow-up-circle-fill text-danger" style="font-size: 1.5rem;"></i>
+        </div>
+        <div>
+          <h2 class="mb-0">Добавить расход</h2>
+          <p class="text-muted mb-0">Зафиксируйте списание средств</p>
+        </div>
+      </div>
+
+      <form method="POST" class="needs-validation" novalidate>
+        <!-- Счёт -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">Счёт</label>
+          <select name="balance_id" class="form-select form-select-lg py-3" required>
+            <option value="" disabled selected>Выберите счёт</option>
+            {% for b in balances %}
+            <option value="{{ b.id }}">
+              {{ b.name or "Без названия" }} — {{ b.amount | round(2) }} ₽
+            </option>
+            {% endfor %}
+          </select>
+          <div class="invalid-feedback">Выберите счёт</div>
+        </div>
+
+        <!-- Сумма -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">Сумма</label>
+          <div class="input-group input-group-lg">
+            <span class="input-group-text bg-light"><i class="bi bi-currency-ruble"></i></span>
+            <input type="number"
+                   step="0.01"
+                   name="amount"
+                   class="form-control py-3"
+                   placeholder="0.00"
+                   required
+                   min="0.01">
+            <div class="invalid-feedback">Введите корректную сумму</div>
+          </div>
+        </div>
+
+        <!-- Описание -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">Описание <span class="text-muted">(необязательно)</span></label>
+          <input type="text" name="description" class="form-control form-control-lg py-3">
+        </div>
+
+        <!-- Кнопка -->
+        <div class="d-grid mt-5">
+          <button type="submit" class="btn btn-danger btn-lg fw-bold desktop-sm-button">
+            <i class="bi bi-x-circle-fill me-2"></i>Добавить расход
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

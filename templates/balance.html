@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Управление счетами{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Заголовок с иконкой -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-wallet2 me-2"></i>Ваши счета
+      </h2>
+      {% if total_balance is defined and total_balance is not none %}
+        <p class="text-muted mb-0">Общий баланс: {{ "{:,.2f}".format(total_balance).replace(",", " ") }} ₽</p>
+      {% else %}
+        <p class="text-muted mb-0">Общий баланс: 0.00 ₽</p>
+      {% endif %}
+    </div>
+    <button class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#newAccountForm">
+      <i class="bi bi-plus-lg me-1"></i>Добавить счет
+    </button>
+  </div>
+
+  <!-- Форма добавления нового счета -->
+  <div class="collapse mb-4" id="newAccountForm">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4">
+        <h5 class="mb-3"><i class="bi bi-plus-circle-fill text-primary me-2"></i>Новый счет</h5>
+        <form method="POST" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Название</label>
+            <input type="text" name="account_name" class="form-control" maxlength="50" placeholder="Название счета">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Начальный баланс</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-currency-ruble"></i></span>
+              <input type="number" name="amount" step="0.01" class="form-control" value="0.0" required>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Инвестор</label>
+            <select name="investor_id" class="form-select">
+              <option value="">Без инвестора</option>
+              {% for inv in investors %}
+                <option value="{{ inv.id }}">{{ inv.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_default" id="isDefaultNew">
+              <label class="form-check-label" for="isDefaultNew">Основной</label>
+            </div>
+          </div>
+          <div class="col-12 mt-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Создать счет
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Список счетов -->
+  <div class="row g-3">
+    {% for b in balances %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4 overflow-hidden {% if b.is_default %}border-start border-3 border-primary{% endif %}">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center"
+             role="button"
+             data-bs-toggle="collapse"
+             data-bs-target="#collapse{{ b.id }}"
+             aria-expanded="false"
+             aria-controls="collapse{{ b.id }}">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0 me-3">
+              <div class="bg-{% if b.is_default %}primary{% else %}secondary{% endif %}-subtle p-2 rounded-3">
+                <i class="bi bi-{% if b.is_default %}wallet2{% else %}credit-card{% endif %} text-{% if b.is_default %}primary{% else %}secondary{% endif %}"></i>
+              </div>
+            </div>
+            <div>
+              <h5 class="mb-0">
+                {% if b.investor_id %}
+                  {{ investors_dict[b.investor_id] }}
+                {% else %}
+                  {{ b.name or "Без названия" }}
+                {% endif %}
+                {% if b.is_default %}
+                  <span class="badge bg-primary ms-2">Основной</span>
+                {% endif %}
+              </h5>
+              <small class="text-muted">Обновлен: {{ b.updated_at.strftime('%d.%m.%Y %H:%M') }}</small>
+            </div>
+          </div>
+          <div>
+            <span class="fs-4 fw-bold {% if b.amount >= 0 %}text-success{% else %}text-danger{% endif %}">
+              {{ "{:,.2f}".format(b.amount).replace(",", " ") }} ₽
+            </span>
+          </div>
+        </div>
+        <div class="collapse" id="collapse{{ b.id }}">
+          <div class="card-body">
+            <form method="POST">
+              <input type="hidden" name="balance_id" value="{{ b.id }}">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Название счёта</label>
+                  <input type="text" name="account_name" class="form-control" value="{{ b.name or '' }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Текущий баланс</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-currency-ruble"></i></span>
+                    <input type="text" class="form-control bg-light" value="{{ "{:,.2f}".format(b.amount).replace(",", " ") }} ₽" readonly>
+                    <input type="hidden" name="amount" value="{{ b.amount }}">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Инвестор</label>
+                  <select name="investor_id" class="form-select">
+                    <option value="">Без инвестора</option>
+                    {% for inv in investors %}
+                      <option value="{{ inv.id }}" {% if b.investor_id == inv.id %}selected{% endif %}>
+                        {{ inv.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="is_default" id="default{{ b.id }}"
+                           {% if b.is_default %}checked{% endif %}>
+                    <label class="form-check-label" for="default{{ b.id }}">Основной счёт</label>
+                  </div>
+                </div>
+                <div class="col-12 d-flex justify-content-between mt-3">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-1"></i>Сохранить
+                  </button>
+                  <button type="button" class="btn btn-outline-danger"
+                          data-bs-toggle="modal"
+                          data-bs-target="#deleteModal"
+                          data-account-id="{{ b.id }}"
+                          data-account-name="{{ b.name or 'Без названия' }}">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if not balances %}
+  <div class="text-center py-5 my-5">
+    <div class="mb-4">
+      <i class="bi bi-wallet text-muted" style="font-size: 3rem;"></i>
+    </div>
+    <h4 class="mb-2">Нет созданных счетов</h4>
+    <p class="text-muted">Добавьте первый счет для управления финансами</p>
+    <button class="btn btn-primary mt-3" data-bs-toggle="collapse" data-bs-target="#newAccountForm">
+      <i class="bi bi-plus-circle me-2"></i>Добавить счет
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="deleteModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div class="bg-danger bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 1.5rem;"></i>
+          </div>
+          <h5>Вы действительно хотите удалить счет <strong id="accountName"></strong>?</h5>
+          <p class="text-danger">Все связанные данные будут безвозвратно удалены!</p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Отмена</button>
+        <a id="deleteAccountBtn" href="{{ url_for('delete_account', account_id=0) }}" class="btn btn-danger px-4">
+          <i class="bi bi-trash me-1"></i> Удалить
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

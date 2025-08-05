@@ -1,0 +1,31 @@
+app = 'rassrochka-i'
+primary_region = 'otp'
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 2
+
+[mounts]
+  source = "pg_data"  # Используем корректный том
+  destination = "/var/lib/postgresql/data"
+
+[env]
+  DATABASE_URL = "postgresql://pgdb-w867508w5703pk4y:rnaAks658itI2tIBvfLlHwPv@direct.w867508w5703pk4y.flympg.net/pgdb-w867508w5703pk4y?sslmode=require"
+  # Добавьте если используете
+  PGSSLMODE = "require"
+  POOL_TIMEOUT = "30"
+
+[[statics]]
+guest_path = "/app/static"
+url_prefix = "/static"
