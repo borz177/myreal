@@ -1751,11 +1751,81 @@ def expense():
     return render_template("expense.html", balances=balances)
 
 
+
 @app.route("/transactions")
 @login_required
 def transactions():
-    txns = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.created_at.desc()).all()
-    return render_template("transactions.html", transactions=txns)
+    # Получаем параметры фильтрации
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    type_filter = request.args.get("type")  # 'all', 'income', 'expense', 'payment'
+
+    # Парсим даты
+    def parse_date(date_str):
+        return dt.strptime(date_str, "%Y-%m-%d") if date_str else None
+
+    start = parse_date(start_date)
+    end = parse_date(end_date)
+    if end:
+        end = (end.replace(hour=23, minute=59, second=59))
+
+    # Фильтрация Transaction
+    transaction_query = Transaction.query.filter_by(user_id=current_user.id)
+    if start:
+        transaction_query = transaction_query.filter(Transaction.created_at >= start)
+    if end:
+        transaction_query = transaction_query.filter(Transaction.created_at <= end)
+    user_transactions = transaction_query.all()
+
+    # Фильтрация Payment
+    payment_query = Payment.query.filter_by(user_id=current_user.id, is_deleted=False)
+    if start:
+        payment_query = payment_query.filter(Payment.created_at >= start)
+    if end:
+        payment_query = payment_query.filter(Payment.created_at <= end)
+    client_payments = payment_query.all()
+
+    # Фильтр по типу
+    combined = []
+
+    if type_filter == "income":
+        combined = [t for t in user_transactions if t.type == "income"]
+    elif type_filter == "expense":
+        combined = [t for t in user_transactions if t.type == "expense"]
+    elif type_filter == "payment":
+        combined = client_payments
+    else:  # "all" или нет фильтра
+        combined = user_transactions + client_payments
+
+    # Сортируем по дате
+    combined.sort(key=lambda x: x.created_at, reverse=False)
+
+    # Подготовка данных для диаграммы
+    total_income = sum(t.amount for t in user_transactions if t.type == "income")
+    total_expense = sum(t.amount for t in user_transactions if t.type == "expense")
+    total_payments = sum(p.amount for p in client_payments)
+
+    chart_data = {
+        "labels": ["Платежи клиентов", "Ручной приход", "Расходы"],
+        "data": [total_payments, total_income, total_expense],
+        "colors": [
+            "#198754",  # 💚 success (платежи) — соответствует text-success
+            "#0dcaf0",  # 💷 info (приход) — соответствует text-info
+            "#dc3545"  # ❤️ danger (расход) — соответствует text-danger
+        ]
+    }
+
+    return render_template(
+        "transactions.html",
+        transactions=combined,
+        chart_data=chart_data,
+        filters={
+            "start_date": start_date,
+            "end_date": end_date,
+            "type": type_filter
+        }
+    )
+
 
 
 
@@ -1841,5 +1911,6 @@ if __name__ == "__main__":
         db.create_all()
         #app.run(host="127.0.0.1", port=5000, debug=True)  # безопаснее локально
         app.run(host="0.0.0.0", port=8080)
+
 
 
