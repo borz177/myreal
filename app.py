@@ -1213,63 +1213,125 @@ def item_payments(item_id):
 
     if request.method == "POST":
         if "add_payment" in request.form:
-
             try:
                 amount = float(request.form.get("amount"))
                 created_at_str = request.form.get("created_at")
                 created_at = datetime.strptime(created_at_str, "%Y-%m-%d") if created_at_str else datetime.utcnow()
 
-                payment = Payment(item_id=item.id, amount=amount, user_id=current_user.id, date=created_at, created_at=created_at)
+                # НАХОДИМ СЧЁТ
+                balance = Balance.query.filter_by(user_id=current_user.id, is_default=True).first()
+                if not balance:
+                    flash("Нет счёта по умолчанию.", "danger")
+                    return redirect(url_for("item_payments", item_id=item_id))
+
+                # ✅ ДОБАВЛЯЕМ ДЕНЬГИ НА СЧЁТ (платёж получен)
+                balance.amount += amount
+
+                # СОЗДАЁМ ПЛАТЕЖ
+                payment = Payment(
+                    item_id=item.id,
+                    amount=amount,
+                    user_id=current_user.id,
+                    date=created_at,
+                    created_at=created_at
+                )
                 db.session.add(payment)
                 db.session.commit()
 
-                total_paid = sum(p.amount for p in item.payments)
-                item.status = "Завершен" if total_paid >= item.price else "Оформлен"
+                # Пересчитываем статус
+                item.status = "Завершен" if item.is_paid else "Оформлен"
+
                 db.session.commit()
 
                 flash("Платёж успешно добавлен", "success")
             except Exception as e:
+                db.session.rollback()
                 flash(f"Ошибка при добавлении платежа: {str(e)}", "danger")
 
+
         elif "delete_payment_id" in request.form:
+
             try:
+
                 payment_id = int(request.form.get("delete_payment_id"))
+
                 payment = Payment.query.get_or_404(payment_id)
-                if item.user_id != current_user.id and not current_user.is_admin:
+
+                if payment.item.user_id != current_user.id and not current_user.is_admin:
                     abort(403)
 
-                    # Обновляем сумму на счёте перед удалением
-                if payment.balance:
-                        payment.balance.amount -= payment.amount
-                db.session.delete(payment)
-                db.session.commit()
+                if payment.is_deleted:
 
-                total_paid = sum(p.amount for p in item.payments)
-                item.status = "Завершен" if total_paid >= item.price else "Оформлен"
-                db.session.commit()
+                    flash("Платёж уже удалён.", "info")
 
-                flash("Платёж удалён", "warning")
+                else:
+
+                    # 🔎 Пытаемся получить счёт
+
+                    balance = payment.balance_rel  # через relationship
+
+                    if not balance:
+
+                        # ❌ Связь сломана: balance_id есть, но объект не загрузился
+
+                        flash("Ошибка: не удаётся найти счёт для платежа. Данные повреждены.", "danger")
+
+                        app.logger.error(
+                            f"Payment {payment.id} has balance_id={payment.balance_id}, but balance_rel is None")
+
+                    elif balance.user_id != current_user.id:
+
+                        # ❌ Доступ к чужому счёту
+
+                        flash("Ошибка: счёт не принадлежит вам.", "danger")
+
+                    else:
+
+                        # ✅ Всё ок — списываем
+
+                        balance.amount -= payment.amount
+
+                        payment.is_deleted = True
+
+                        # Обновляем статус товара
+
+                        item = payment.item
+
+                        total_paid = sum(p.amount for p in item.payments if not p.is_deleted)
+
+                        item.status = "Завершен" if total_paid >= item.price else "Оформлен"
+
+                        db.session.commit()
+
+                        flash("Платёж удалён — сумма списана с счёта", "warning")
+
+                        return redirect(url_for("item_payments", item_id=item.id))
+
+
             except Exception as e:
-                flash(f"Ошибка при удалении платежа: {str(e)}", "danger")
 
-        return redirect(url_for("item_payments", item_id=item_id))
+                db.session.rollback()
 
-        # Измененная строка - сортировка платежей по дате создания в обратном порядке
+                app.logger.error(f"Ошибка при удалении платежа: {e}")
+
+                flash("Ошибка при удалении платежа", "danger")
+
+            return redirect(url_for("item_payments", item_id=item_id))
+
+
+    # Загружаем все платежи
     payments = Payment.query.filter_by(item_id=item.id).order_by(Payment.created_at.desc()).all()
 
-    total_paid = sum(payment.amount for payment in payments)
+    total_paid = sum(p.amount for p in payments if not p.is_deleted)
     down_payment = item.down_payment or 0
     installment_price = item.price or 0
-
     remaining = max(installment_price - total_paid - down_payment, 0)
     current_date = datetime.today().strftime("%Y-%m-%d")
 
-
-    # Генерируем токен, если его ещё нет
+    # Генерируем токен, если его нет
     if not item.access_token:
         item.generate_access_token()
         db.session.commit()
-
 
     return render_template(
         "item_payments.html",
@@ -1281,11 +1343,11 @@ def item_payments(item_id):
     )
 
 
+
+
+
+
 #pdf экспорт
-
-
-
-
 
 @app.route("/pdf/<string:token>")
 def export_pdf_by_token(token):
@@ -1295,9 +1357,13 @@ def export_pdf_by_token(token):
     if not item.token_created_at or item.token_created_at < datetime.utcnow() - timedelta(days=7):
         abort(403, description="Срок действия ссылки истёк.")
 
-    payments = Payment.query.filter_by(item_id=item.id).order_by(Payment.created_at.asc()).all()
+    # ✅ Фильтруем: только активные платежи
+    payments = Payment.query.filter_by(
+        item_id=item.id,
+        is_deleted=False  # ✅ Только неудалённые
+    ).order_by(Payment.created_at.asc()).all()
 
-    # PDF генерация (оставляем без изменений, можно вынести в отдельную функцию при желании)
+    # PDF генерация
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -1307,6 +1373,7 @@ def export_pdf_by_token(token):
         topMargin=40,
         bottomMargin=30
     )
+
     font_path = os.path.join('static', 'fonts', 'DejaVuSans.ttf')
     pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
     styles = getSampleStyleSheet()
@@ -1314,13 +1381,14 @@ def export_pdf_by_token(token):
     styleN = ParagraphStyle('Normal', parent=styles['Normal'], fontName='DejaVuSans', fontSize=12, leading=15)
 
     elements = []
+
+    # ✅ Пересчитываем оплачено: только активные платежи
     total_paid = item.down_payment + sum(p.amount for p in payments)
     remaining = item.price - total_paid
 
     elements.extend([
         Paragraph("Акт сверки", styleH),
         Spacer(1, 12),
-
         Paragraph(f"Клиент: {item.client_name}", styleN),
         Spacer(1, 10),
         Paragraph(f"Товар: {item.name}", styleN),
@@ -1340,42 +1408,44 @@ def export_pdf_by_token(token):
         Paragraph(f"Ежемесячный платёж: {round((item.price - item.down_payment) / item.installments)} ₽", styleN),
         Spacer(1, 12),
     ])
-    data = [['№', 'Дата', 'Сумма', 'Остаток']]
-    remaining = item.price
-    row_index = 1
-    first_payment_row = None  # индекс строки первого взноса (если есть)
 
-    # Учет первого взноса
+    # Таблица платежей
+    data = [['№', 'Дата', 'Сумма', 'Остаток']]
+    current_remaining = item.price  # Начинаем с полной цены
+    row_index = 1
+    first_payment_row = None
+
+    # Учёт первого взноса
     if item.down_payment:
-        remaining -= item.down_payment
+        current_remaining -= item.down_payment
         data.append([
             str(row_index),
             f"{item.created_at.strftime('%d.%m.%Y')} (Взнос)",
             format_rubles(item.down_payment),
-            format_rubles(remaining)
+            format_rubles(current_remaining)
         ])
-        first_payment_row = row_index  # помним строку первого взноса
+        first_payment_row = row_index
         row_index += 1
 
-    # Остальные платежи
+    # Остальные платежи (только активные)
     for p in payments:
-        remaining -= p.amount
+        current_remaining -= p.amount
         data.append([
             str(row_index),
             p.created_at.strftime('%d.%m.%Y'),
             format_rubles(p.amount),
-            format_rubles(remaining)
+            format_rubles(current_remaining)
         ])
         row_index += 1
 
     # Создание таблицы
     table = Table(data, colWidths=[30, 140, 100, 100], hAlign='LEFT')
 
-    # Стилизация таблицы
+    # Стилизация
     table_style = [
         ('FONTNAME', (0, 0), (-1, -1), 'DejaVuSans'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4a90e2')),  # Заголовок
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4a90e2')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -1383,15 +1453,13 @@ def export_pdf_by_token(token):
         ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
     ]
 
-    # Подсветим первый взнос светло-зелёным
+    # Подсветка первого взноса
     if first_payment_row:
         table_style.append(
             ('BACKGROUND', (0, first_payment_row), (-1, first_payment_row), colors.HexColor('#d0f0c0'))
         )
 
     table.setStyle(TableStyle(table_style))
-
-
     elements.append(table)
 
     doc.build(elements)
@@ -1403,8 +1471,6 @@ def export_pdf_by_token(token):
         download_name=f"{item.client_name}_акт_сверки.pdf",
         mimetype='application/pdf'
     )
-
-
 
 @app.route('/whatsapp_link/<int:item_id>')
 def whatsapp_link(item_id):
@@ -1911,6 +1977,7 @@ if __name__ == "__main__":
         db.create_all()
         #app.run(host="127.0.0.1", port=5000, debug=True)  # безопаснее локально
         app.run(host="0.0.0.0", port=8080)
+
 
 
 
