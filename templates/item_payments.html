@@ -123,12 +123,14 @@
   <tbody>
     {% if payments %}
       {% for payment in payments %}
-        <tr>
+        <tr class="{% if payment.is_deleted %}table-secondary text-decoration-line-through{% endif %}">
           <td>{{ loop.index }}</td>
           <td>{{ payment.created_at.strftime('%d.%m.%Y') }}</td>
           <td>{{ payment.amount }} ₽</td>
           <td>
-            {% if total_paid >= (item.price or 0) %}
+            {% if payment.is_deleted %}
+              <span class="badge bg-secondary">Удалён</span>
+            {% elif total_paid >= (item.price or 0) %}
               <span class="badge bg-success">Оплачено</span>
             {% else %}
               <span class="badge bg-warning text-dark">Частично</span>
@@ -136,28 +138,35 @@
           </td>
           <td onclick="event.stopPropagation()">
             <div class="d-flex gap-2">
-              <button type="button"
-                      class="btn btn-sm btn-outline-danger delete-payment-btn"
-                      data-bs-toggle="modal"
-                      data-bs-target="#deletePaymentModal{{ payment.id }}">
-                Удалить
-              </button>
+              {% if not payment.is_deleted %}
+                <!-- Кнопка удаления -->
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger delete-payment-btn"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deletePaymentModal{{ payment.id }}">
+                  Удалить
+                </button>
+              {% else %}
+                <!-- Удалённый платёж — действий нет -->
+                <span class="text-muted small">—</span>
+              {% endif %}
             </div>
           </td>
         </tr>
 
-        <!-- Модальное окно удаления платежа -->
+        <!-- Модальное окно: Удалить платёж -->
         <div class="modal fade" id="deletePaymentModal{{ payment.id }}" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
               <form method="POST">
                 <input type="hidden" name="delete_payment_id" value="{{ payment.id }}">
                 <div class="modal-header">
-                  <h5 class="modal-title">Подтверждение удаления</h5>
+                  <h5 class="modal-title">Подтвердите удаление</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                  Вы уверены, что хотите удалить этот платёж?
+                  Вы уверены, что хотите удалить платёж на сумму <strong>{{ payment.amount }} ₽</strong>?
+                  <br><small class="text-muted">Операция пометит платёж как удалённый. Восстановление невозможно.</small>
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -167,6 +176,7 @@
             </div>
           </div>
         </div>
+
       {% endfor %}
     {% else %}
       <tr>
