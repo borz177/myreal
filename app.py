@@ -1021,17 +1021,19 @@ def search_clients():
 def make_payment(item_id):
     item = Item.query.filter_by(id=item_id, user_id=current_user.id).first_or_404()
 
-    if not item.price or not item.months:
+    if not item.price or not item.months or item.months == 0:
         flash("У товара не указана цена или срок рассрочки", "danger")
         return redirect(url_for("payments"))
 
-    monthly_payment = item.price / item.months
+    monthly_payment = round(item.price / item.months, 2)
 
-    if item.payments_made >= item.months:
+    # Пересчитываем сумму оплаты
+    total_paid = sum(p.amount for p in item.payments if not p.is_deleted)
+    if total_paid >= item.price:
         flash("Этот товар уже полностью оплачен", "info")
         return redirect(url_for("payments"))
 
-    # Получаем счёт инвестора
+    # Выбор счёта
     if item.investor_id:
         balance = Balance.query.filter_by(
             user_id=current_user.id,
@@ -1048,21 +1050,26 @@ def make_payment(item_id):
         return redirect(url_for("payments"))
 
     try:
-        # ✅ Добавляем деньги инвестору (а не вычитаем)
+        # Увеличиваем баланс
         balance.amount += monthly_payment
 
-        # Увеличиваем количество платежей
-        item.payments_made += 1
+        # Пересчитываем сумму после платежа
+        total_paid_after = total_paid + monthly_payment
 
-        # Обновляем статус, если всё выплачено
-        if item.payments_made >= item.months:
-            item.status = "paid"
+        # Обновляем статус по сумме
+        item.status = "Завершен" if item.is_paid else "Оформлен"
 
-        # Создаём запись о платеже
+        # Создаём платеж
         payment = Payment(
             item_id=item.id,
             amount=monthly_payment,
-            user_id=current_user.id
+            user_id=current_user.id,
+            balance_id=balance.id,
+            balance_snapshot=balance.amount - monthly_payment,
+            description=f"Ежемесячный платёж от {item.client_name}",
+            is_deleted=False,
+            created_at=datetime.utcnow(),
+            date=datetime.utcnow()
         )
         db.session.add(payment)
         db.session.commit()
@@ -1072,7 +1079,7 @@ def make_payment(item_id):
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Ошибка при проведении платежа: {e}")
-        flash("Ошибка при платеже", "danger")
+        flash("Произошла ошибка", "danger")
 
     return redirect(url_for("payments"))
 
@@ -1977,6 +1984,7 @@ if __name__ == "__main__":
         db.create_all()
         #app.run(host="127.0.0.1", port=5000, debug=True)  # безопаснее локально
         app.run(host="0.0.0.0", port=8080)
+
 
 
 
